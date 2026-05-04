@@ -1,0 +1,541 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Merch Shop</title>
+  <meta name="description" content="Single-file merch shop demo (mock checkout, admin, localStorage)">
+  <style>
+    :root{
+      --bg:#0b1220;
+      --panel:#0f1724;
+      --muted:#9aa4b2;
+      --accent:#2b6ef6; /* cool blue accent */
+      --accent-2:#6ee7b7; /* subtle green-ish accent */
+      --card:#0e1520;
+      --glass: rgba(255,255,255,0.03);
+      --radius:14px;
+      --maxw:1200px;
+      --shadow: 0 6px 20px rgba(2,6,23,0.6);
+      color-scheme: dark;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:Inter,ui-sans-serif,system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial;
+      background:linear-gradient(180deg,var(--bg),#071022 120%);
+      color:#e6eef8;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      padding:32px 18px;
+      display:flex;
+      justify-content:center;
+      align-items:flex-start;
+    }
+    .app{width:100%;max-width:var(--maxw)}
+
+    header{
+      display:flex;align-items:center;justify-content:space-between;padding:18px;border-radius:12px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));box-shadow:var(--shadow);margin-bottom:20px;
+    }
+    .brand{display:flex;gap:12px;align-items:center}
+    .logo{width:58px;height:58px;border-radius:12px;background:linear-gradient(135deg,var(--accent),#3b82f6);display:flex;align-items:center;justify-content:center;font-weight:700}
+    .logo span{font-size:20px}
+    .brand h1{margin:0;font-size:18px}
+    .brand p{margin:0;color:var(--muted);font-size:12px}
+
+    .controls{display:flex;gap:12px;align-items:center}
+    .search{background:var(--glass);border:1px solid rgba(255,255,255,0.03);padding:10px;border-radius:12px;display:flex;align-items:center;gap:8px;width:300px}
+    .search input{background:transparent;border:0;color:inherit;outline:none;width:100%}
+
+    .btn{background:var(--accent);border:0;padding:10px 12px;border-radius:10px;cursor:pointer;color:white;font-weight:600}
+    .btn.secondary{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted)}
+
+    main{display:grid;grid-template-columns:1fr 320px;gap:18px}
+    @media (max-width:920px){main{grid-template-columns:1fr} .cart-panel{order:2}}
+
+    .left-panel{background:linear-gradient(180deg, rgba(255,255,255,0.01), transparent);padding:18px;border-radius:12px;}
+    .right-panel{background:var(--panel);padding:18px;border-radius:12px;position:relative}
+
+    .filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+    .chip{padding:8px 10px;border-radius:999px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.02);cursor:pointer;color:var(--muted)}
+    .chip.active{background:linear-gradient(90deg,var(--accent),#376af6);color:white}
+
+    .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+    @media (max-width:1000px){.grid{grid-template-columns:repeat(2,1fr)}}
+    @media (max-width:600px){.grid{grid-template-columns:1fr}}
+
+    .card{background:var(--card);padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,0.02);display:flex;flex-direction:column;gap:10px}
+    .thumb{height:160px;border-radius:10px;overflow:hidden;display:flex;align-items:center;justify-content:center;background:linear-gradient(120deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01))}
+    .thumb img{width:100%;height:100%;object-fit:cover}
+    .meta{display:flex;justify-content:space-between;align-items:center}
+    .meta h3{margin:0;font-size:15px}
+    .price{font-weight:700}
+    .variants{font-size:12px;color:var(--muted)}
+
+    .card .actions{display:flex;gap:8px}
+    .icon-btn{background:transparent;border:1px solid rgba(255,255,255,0.03);padding:8px;border-radius:10px;cursor:pointer;color:var(--muted)}
+
+    .cart-panel .heading{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+    .cart-list{display:flex;flex-direction:column;gap:10px;max-height:420px;overflow:auto;padding-right:6px}
+    .cart-item{display:flex;gap:10px;align-items:center;background:rgba(255,255,255,0.01);padding:8px;border-radius:10px}
+    .cart-item img{width:64px;height:64px;object-fit:cover;border-radius:8px}
+    .qty{display:flex;align-items:center;gap:6px}
+    .small{font-size:12px;color:var(--muted)}
+
+    footer.note{margin-top:10px;font-size:13px;color:var(--muted)}
+
+    /* modal */
+    .modal-backdrop{position:fixed;inset:0;background:linear-gradient(180deg, rgba(2,6,23,0.6), rgba(2,6,23,0.8));display:flex;align-items:center;justify-content:center;z-index:60}
+    .modal{width:980px;max-width:96%;background:linear-gradient(180deg,#08101b,#071022);padding:18px;border-radius:12px}
+    @media (max-width:720px){.modal{padding:12px}}
+    .modal .content{display:grid;grid-template-columns:420px 1fr;gap:14px}
+    @media (max-width:720px){.modal .content{grid-template-columns:1fr}}
+
+    .admin-panel{position:fixed;right:18px;bottom:18px;background:linear-gradient(90deg,var(--accent),#3b82f6);padding:10px;border-radius:12px;box-shadow:var(--shadow);z-index:50}
+
+    .form-row{display:flex;flex-direction:column;gap:8px;margin-bottom:8px}
+    input,select,textarea{background:transparent;border:1px solid rgba(255,255,255,0.05);padding:10px;border-radius:8px;color:inherit}
+    label{font-size:13px;color:var(--muted)}
+
+    .notice{background:linear-gradient(90deg, rgba(107,114,128,0.06), rgba(59,130,246,0.03));padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.02);font-size:13px;color:var(--muted)}
+
+    .empty{opacity:0.6;text-align:center;padding:28px}
+
+    .tiny{font-size:12px;color:var(--muted)}
+
+    /* small animations */
+    .fade-in{animation:fade .22s ease both}
+    @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="brand">
+        <div class="logo"><span>K</span></div>
+        <div>
+          <h1>kkg3004</h1>
+          <p>Merch store :D • AED • Dubai delivery only</p>
+        </div>
+      </div>
+
+      <div class="controls">
+        <div class="search">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="11" cy="11" r="6"></circle><path d="M21 21l-4.35-4.35"></path></svg>
+          <input id="search" placeholder="Search products or tags...">
+        </div>
+        <button class="btn" id="open-cart">Cart (<span id="cart-count">0</span>)</button>
+        <button class="btn secondary" id="open-admin">Admin</button>
+      </div>
+    </header>
+
+    <main>
+      <section class="left-panel">
+        <div class="filters">
+          <div class="chip active" data-cat="all">All</div>
+          <div class="chip" data-cat="clothing">Clothing</div>
+          <div class="chip" data-cat="accessory">Accessory</div>
+          <div class="chip" data-cat="poster">Poster</div>
+          <div class="chip" data-cat="limited">Limited</div>
+        </div>
+
+        <div class="grid" id="product-grid">
+          <!-- products injected here -->
+        </div>
+
+      </section>
+
+      <aside class="right-panel cart-panel">
+        <div class="heading"><div><strong>Cart</strong><div class="tiny">Guest checkout — mock payments</div></div><div><button class="btn secondary" id="clear-cart">Clear</button></div></div>
+        <div class="cart-list" id="cart-list"></div>
+        <div style="margin-top:12px">
+          <div class="notice">Deliveries only within <strong>Dubai</strong>. Prices shown in AED (د.إ)</div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px">
+            <div>
+              <div class="small">Subtotal</div>
+              <div id="cart-subtotal" style="font-weight:700">د.إ 0.00</div>
+            </div>
+            <div>
+              <button class="btn" id="checkout-btn">Checkout</button>
+            </div>
+          </div>
+        </div>
+        <footer class="note">Tip: use the Admin button to add or edit products. Data saves in your browser (localStorage).</footer>
+      </aside>
+    </main>
+
+    <!-- admin floating -->
+    <div class="admin-panel" title="Open admin">
+      <button id="open-admin-floating" style="background:transparent;border:0;color:white;font-weight:700;cursor:pointer">Admin</button>
+    </div>
+
+    <!-- modals (hidden by default) -->
+    <div id="modal-root"></div>
+
+  </div>
+
+  <script>
+  /* Single-file merch demo
+     - Products and orders persisted in localStorage
+     - Mock checkout collects shipping info and stores order
+     - Admin panel allows add/edit/delete
+  */
+
+  const LS_PRODUCTS = 'merch_products_v1';
+  const LS_CART = 'merch_cart_v1';
+  const LS_ORDERS = 'merch_orders_v1';
+
+  // Seed products if none
+  function seedProducts(){
+    const samples = [
+      {id:uid(),'title':'Midnight Logo Tee','price':85,'currency':'AED','category':'clothing','inventory':30,'tags':['tee','logo'],'images':['https://picsum.photos/seed/tee1/800/600'],'variants':[{'name':'Size','options':['S','M','L','XL']}], 'desc':'Soft cotton tee with embroidered logo.'},
+      {id:uid(),'title':'Urban Hoodie','price':150,'currency':'AED','category':'clothing','inventory':18,'tags':['hoodie','warm'],'images':['https://picsum.photos/seed/hoodie/800/600'],'variants':[{'name':'Size','options':['S','M','L','XL']}],'desc':'Cozy pullover hoodie with inside pocket.'},
+      {id:uid(),'title':'Reflective Cap','price':55,'currency':'AED','category':'accessory','inventory':50,'tags':['cap','hat'],'images':['https://picsum.photos/seed/cap/800/600'],'variants':[{'name':'Color','options':['Black','Navy','Grey']}],'desc':'Low profile cap with reflective trim.'},
+      {id:uid(),'title':'Minimalist Poster','price':40,'currency':'AED','category':'poster','inventory':100,'tags':['wall','art'],'images':['https://picsum.photos/seed/poster1/800/600'],'variants':[],'desc':'A3 poster printed on matte paper.'},
+      {id:uid(),'title':'Sticker Pack (10)','price':25,'currency':'AED','category':'accessory','inventory':200,'tags':['sticker','pack'],'images':['https://picsum.photos/seed/sticker/800/600'],'variants':[],'desc':'High-quality vinyl sticker pack.'},
+      {id:uid(),'title':'Limited Run Jacket','price':420,'currency':'AED','category':'clothing','inventory':5,'tags':['limited','jacket'],'images':['https://picsum.photos/seed/jacket/800/600'],'variants':[{'name':'Size','options':['M','L']}],'desc':'Premium limited edition jacket.'},
+      {id:uid(),'title':'Leather Keychain','price':35,'currency':'AED','category':'accessory','inventory':120,'tags':['keychain','leather'],'images':['https://picsum.photos/seed/key/800/600'],'variants':[],'desc':'Genuine leather keychain with logo.'},
+      {id:uid(),'title':'Performance Socks (2)','price':30,'currency':'AED','category':'clothing','inventory':80,'tags':['socks','performance'],'images':['https://picsum.photos/seed/socks/800/600'],'variants':[{'name':'Size','options':['M','L']}],'desc':'Breathable athletic socks.'},
+      {id:uid(),'title':'Canvas Tote','price':65,'currency':'AED','category':'accessory','inventory':70,'tags':['bag','tote'],'images':['https://picsum.photos/seed/tote/800/600'],'variants':[{'name':'Color','options':['Natural','Black']}],'desc':'Durable canvas tote bag.'},
+      {id:uid(),'title':'Collector Pin','price':20,'currency':'AED','category':'limited','inventory':40,'tags':['pin','collectible'],'images':['https://picsum.photos/seed/pin/800/600'],'variants':[],'desc':'Enamel pin — collect them all.'}
+    ];
+    localStorage.setItem(LS_PRODUCTS, JSON.stringify(samples));
+    return samples;
+  }
+
+  // helpers
+  function uid(){return 'p_'+Math.random().toString(36).slice(2,9)}
+  function money(n){return 'د.إ ' + Number(n).toLocaleString('en-AE',{minimumFractionDigits:2,maximumFractionDigits:2})}
+
+  function loadProducts(){
+    const raw = localStorage.getItem(LS_PRODUCTS);
+    if(!raw) return seedProducts();
+    try{return JSON.parse(raw)}catch(e){return seedProducts()}
+  }
+  function saveProducts(list){localStorage.setItem(LS_PRODUCTS, JSON.stringify(list))}
+
+  // cart
+  function loadCart(){const raw=localStorage.getItem(LS_CART);return raw?JSON.parse(raw):[]}
+  function saveCart(c){localStorage.setItem(LS_CART, JSON.stringify(c))}
+
+  // orders
+  function loadOrders(){const raw=localStorage.getItem(LS_ORDERS);return raw?JSON.parse(raw):[]}
+  function saveOrders(o){localStorage.setItem(LS_ORDERS, JSON.stringify(o))}
+
+  // app state
+  let products = loadProducts();
+  let cart = loadCart();
+
+  // UI refs
+  const gridEl = document.getElementById('product-grid');
+  const cartListEl = document.getElementById('cart-list');
+  const cartCountEl = document.getElementById('cart-count');
+  const cartSubtotalEl = document.getElementById('cart-subtotal');
+  const searchInput = document.getElementById('search');
+
+  // render products
+  function renderGrid(filterText='',category='all'){
+    gridEl.innerHTML='';
+    const q = filterText.trim().toLowerCase();
+    const filtered = products.filter(p=>{
+      if(category!=='all' && p.category!==category) return false;
+      if(!q) return true;
+      return [p.title, p.desc, (p.tags||[]).join(' ')].join(' ').toLowerCase().includes(q);
+    });
+    if(filtered.length===0){gridEl.innerHTML='<div class="empty">No products found.</div>';return}
+    filtered.forEach(p=>{
+      const card = document.createElement('div');card.className='card fade-in';
+      card.innerHTML = `
+        <div class="thumb"><img src="${p.images[0]}" alt="${escapeHtml(p.title)}"></div>
+        <div class="meta"><h3>${escapeHtml(p.title)}</h3><div class="price">${money(p.price)}</div></div>
+        <div class="variants small">${p.variants && p.variants.length? p.variants.map(v=>v.name+' ✓').join(' • '):''}</div>
+        <div class="tiny">${escapeHtml(p.desc||'')}</div>
+        <div class="actions" style="margin-top:8px;">
+          <button class="btn" data-action="buy" data-id="${p.id}">Add to cart</button>
+          <button class="icon-btn" data-action="view" data-id="${p.id}">View</button>
+          <button class="icon-btn" data-action="fav" data-id="${p.id}">♡</button>
+        </div>
+      `;
+      gridEl.appendChild(card);
+    });
+  }
+
+  function escapeHtml(s){return (s||'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;')}
+
+  function findProduct(id){return products.find(x=>x.id===id)}
+
+  // product modal
+  function openProduct(id){
+    const p = findProduct(id);
+    if(!p) return alert('Product not found');
+    const modal = document.createElement('div');modal.className='modal-backdrop';
+    modal.innerHTML = `
+      <div class="modal">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <div><strong>${escapeHtml(p.title)}</strong><div class="tiny">${p.tags.join(' • ')}</div></div>
+          <div><button class="btn" id="close-prod">Close</button></div>
+        </div>
+        <div class="content">
+          <div>
+            <div style="border-radius:10px;overflow:hidden;height:320px"><img src="${p.images[0]}" style="width:100%;height:100%;object-fit:cover"></div>
+            <div style="display:flex;gap:8px;margin-top:8px">
+              ${p.images.map((src,i)=>`<img src="${src}" style="width:72px;height:56px;object-fit:cover;border-radius:8px;border:1px solid rgba(255,255,255,0.03)"/>`).join('')}
+            </div>
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;align-items:center"><div style="font-size:20px;font-weight:700">${money(p.price)}</div><div class="small">In stock: ${p.inventory}</div></div>
+            <p class="tiny" style="margin-top:10px">${escapeHtml(p.desc||'')}</p>
+
+            <div style="margin-top:12px">
+              ${p.variants && p.variants.length? p.variants.map(v=>`<div class="form-row"><label>${v.name}</label><select data-variant="${v.name}">${v.options.map(o=>`<option>${o}</option>`).join('')}</select></div>`).join(''):''}
+            </div>
+
+            <div style="display:flex;gap:8px;margin-top:12px">
+              <button class="btn" id="add-to-cart">Add to cart</button>
+              <button class="btn secondary" id="buy-now">Buy now</button>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    `;
+    document.getElementById('modal-root').appendChild(modal);
+    modal.querySelector('#close-prod').onclick = ()=>modal.remove();
+    modal.querySelector('#add-to-cart').onclick = ()=>{addToCart(p.id); modal.remove();}
+    modal.querySelector('#buy-now').onclick = ()=>{addToCart(p.id); modal.remove(); openCheckout()}
+  }
+
+  // cart management
+  function addToCart(id){
+    const p = findProduct(id); if(!p) return;
+    const existing = cart.find(i=>i.id===id);
+    if(existing){ existing.qty = Math.min(p.inventory, existing.qty+1); }
+    else cart.push({id:p.id,title:p.title,price:p.price,qty:1,image:p.images[0]});
+    saveCart(cart); renderCart();
+  }
+
+  function removeFromCart(id){cart = cart.filter(i=>i.id!==id); saveCart(cart); renderCart();}
+  function changeQty(id,delta){const it = cart.find(i=>i.id===id); if(!it) return; it.qty = Math.max(1,it.qty+delta); saveCart(cart); renderCart();}
+
+  function renderCart(){
+    cartListEl.innerHTML='';
+    if(cart.length===0){cartListEl.innerHTML='<div class="empty">Your cart is empty.</div>'; cartCountEl.textContent=0; cartSubtotalEl.textContent = money(0); return}
+    cart.forEach(item=>{
+      const el = document.createElement('div');el.className='cart-item fade-in';
+      el.innerHTML = `
+        <img src="${item.image}" alt="${escapeHtml(item.title)}">
+        <div style="flex:1">
+          <div style="display:flex;justify-content:space-between;align-items:center"><div style="font-weight:700">${escapeHtml(item.title)}</div><div>${money(item.price)}</div></div>
+          <div class="small">Qty: <span class="qty"> <button class="icon-btn" data-q="-" data-id="${item.id}">-</button> ${item.qty} <button class="icon-btn" data-q="+" data-id="${item.id}">+</button> </span></div>
+        </div>
+        <div><button class="icon-btn" data-remove="${item.id}">✕</button></div>
+      `;
+      cartListEl.appendChild(el);
+    });
+    cartCountEl.textContent = cart.reduce((s,i)=>s+i.qty,0);
+    const subtotal = cart.reduce((s,i)=>s+i.qty*i.price,0);
+    cartSubtotalEl.textContent = money(subtotal);
+  }
+
+  // checkout
+  function openCheckout(){
+    const modal = document.createElement('div');modal.className='modal-backdrop';
+    modal.innerHTML = `
+      <div class="modal">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <div><strong>Checkout (Mock)</strong><div class="tiny">Guest checkout — orders saved locally</div></div>
+          <div><button class="btn" id="close-checkout">Close</button></div>
+        </div>
+        <div class="content">
+          <div>
+            <div class="form-row"><label>Full name</label><input id="ship-name" required></div>
+            <div class="form-row"><label>Phone</label><input id="ship-phone" required placeholder="05XXXXXXXX"></div>
+            <div class="form-row"><label>Delivery area</label>
+              <select id="ship-area"><option>Dubai</option></select>
+              <div class="tiny">Currently only Dubai delivery supported. Orders outside Dubai will not be accepted.</div>
+            </div>
+            <div class="form-row"><label>Address</label><textarea id="ship-address" rows="3" placeholder="Building, Street, Area"></textarea></div>
+            <div class="form-row"><label>Notes (optional)</label><textarea id="ship-notes" rows="2"></textarea></div>
+          </div>
+          <div>
+            <div style="font-weight:700">Order summary</div>
+            <div id="checkout-summary" style="margin-top:8px"></div>
+            <div style="margin-top:12px;display:flex;gap:8px"><button class="btn" id="place-order">Place order (mock)</button><button class="btn secondary" id="cancel-order">Cancel</button></div>
+          </div>
+        </div>
+      </div>
+    `;
+    document.getElementById('modal-root').appendChild(modal);
+    modal.querySelector('#close-checkout').onclick = ()=>modal.remove();
+    modal.querySelector('#cancel-order').onclick = ()=>modal.remove();
+
+    const summaryEl = modal.querySelector('#checkout-summary');
+    if(cart.length===0){summaryEl.innerHTML='<div class="empty">Cart empty</div>';}
+    else{
+      summaryEl.innerHTML = cart.map(i=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dashed rgba(255,255,255,0.02)"><div>${escapeHtml(i.title)} x${i.qty}</div><div>${money(i.price*i.qty)}</div></div>`).join('') + `<div style="display:flex;justify-content:space-between;margin-top:8px;font-weight:700"><div>Total</div><div>${money(cart.reduce((s,i)=>s+i.qty*i.price,0))}</div></div>`;
+    }
+
+    modal.querySelector('#place-order').onclick = ()=>{
+      const name = modal.querySelector('#ship-name').value.trim();
+      const phone = modal.querySelector('#ship-phone').value.trim();
+      const area = modal.querySelector('#ship-area').value;
+      const address = modal.querySelector('#ship-address').value.trim();
+      if(!name || !phone || !address){alert('Please fill name, phone and address');return}
+      if(area !== 'Dubai'){alert('Currently delivery only supported within Dubai');return}
+
+      // create order
+      const order = {
+        id: 'o_'+Math.random().toString(36).slice(2,9),
+        date: new Date().toISOString(),
+        customer:{name,phone,area,address,notes:modal.querySelector('#ship-notes').value||''},
+        items:cart.slice(),
+        total:cart.reduce((s,i)=>s+i.qty*i.price,0),
+        status:'pending'
+      };
+      const orders = loadOrders(); orders.unshift(order); saveOrders(orders);
+
+      // reduce inventory (simple)
+      order.items.forEach(it=>{const p=findProduct(it.id); if(p){p.inventory = Math.max(0,p.inventory - it.qty)}});
+      saveProducts(products);
+
+      // clear cart
+      cart = []; saveCart(cart); renderCart();
+
+      modal.remove(); alert('Order placed (mock). Order ID: '+order.id + '\nOrders saved locally in your browser.');
+    }
+  }
+
+  // admin
+  function openAdmin(){
+    const modal = document.createElement('div');modal.className='modal-backdrop';
+    modal.innerHTML = `
+      <div class="modal" style="max-width:920px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <div><strong>Admin</strong><div class="tiny">Add / edit products • Export orders</div></div>
+          <div><button class="btn" id="close-admin">Close</button></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 360px;gap:12px">
+          <div>
+            <div style="margin-bottom:12px"><button class="btn" id="new-prod">New product</button><button class="btn secondary" id="export-orders" style="margin-left:8px">Export orders CSV</button></div>
+            <div id="admin-list" style="display:flex;flex-direction:column;gap:8px;max-height:520px;overflow:auto"></div>
+          </div>
+          <div style="background:rgba(255,255,255,0.01);padding:12px;border-radius:10px">
+            <div style="font-weight:700;margin-bottom:6px">Product editor</div>
+            <div id="editor-area"><div class="tiny">Select a product or create a new one.</div></div>
+          </div>
+        </div>
+      </div>
+    `;
+    document.getElementById('modal-root').appendChild(modal);
+    modal.querySelector('#close-admin').onclick = ()=>modal.remove();
+
+    const listEl = modal.querySelector('#admin-list');
+    const editor = modal.querySelector('#editor-area');
+
+    function refreshList(){
+      listEl.innerHTML='';
+      products.forEach(p=>{const el=document.createElement('div');el.className='card';el.style.display='flex';el.style.justifyContent='space-between';el.style.alignItems='center';el.innerHTML = `<div style="display:flex;gap:8px;align-items:center"><img src="${p.images[0]}" style="width:64px;height:48px;object-fit:cover;border-radius:8px"><div><div style="font-weight:700">${escapeHtml(p.title)}</div><div class="tiny">${p.category} • ${p.inventory} in stock</div></div></div><div style="display:flex;gap:8px"><button class="btn" data-edit="${p.id}">Edit</button><button class="btn secondary" data-del="${p.id}">Delete</button></div>`;listEl.appendChild(el)})
+    }
+    refreshList();
+
+    modal.querySelector('#new-prod').onclick = ()=>openEditor(null);
+    modal.querySelector('#export-orders').onclick = ()=>exportOrdersCSV();
+
+    listEl.addEventListener('click',e=>{
+      const id = e.target.getAttribute('data-edit');
+      if(id) openEditor(id);
+      const del = e.target.getAttribute('data-del'); if(del){if(confirm('Delete product?')){products = products.filter(p=>p.id!==del); saveProducts(products); refreshList(); renderGrid();}}
+    })
+
+    function openEditor(id){
+      const p = id? products.find(x=>x.id===id) : {id:uid(),title:'',price:0,currency:'AED',category:'clothing',inventory:10,tags:[],images:[],variants:[],desc:''};
+      editor.innerHTML = `
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div class="form-row"><label>Title</label><input id="e-title" value="${escapeHtml(p.title)}"></div>
+          <div class="form-row"><label>Price (AED)</label><input id="e-price" type="number" value="${p.price}"></div>
+          <div class="form-row"><label>Category</label><select id="e-cat"><option${p.category==='clothing'? ' selected':''}>clothing</option><option${p.category==='accessory'? ' selected':''}>accessory</option><option${p.category==='poster'? ' selected':''}>poster</option><option${p.category==='limited'? ' selected':''}>limited</option></select></div>
+          <div class="form-row"><label>Inventory</label><input id="e-inv" type="number" value="${p.inventory}"></div>
+          <div class="form-row"><label>Tags (comma separated)</label><input id="e-tags" value="${(p.tags||[]).join(',')}"></div>
+          <div class="form-row"><label>Images (comma separated URLs)</label><input id="e-imgs" value="${(p.images||[]).join(',')}"></div>
+          <div class="form-row"><label>Description</label><textarea id="e-desc" rows="3">${escapeHtml(p.desc||'')}</textarea></div>
+          <div style="display:flex;gap:8px"><button class="btn" id="save-prod">Save</button><button class="btn secondary" id="cancel-prod">Cancel</button></div>
+        </div>
+      `;
+      editor.querySelector('#cancel-prod').onclick = ()=>{editor.innerHTML='<div class="tiny">Select a product or create a new one.</div>'}
+      editor.querySelector('#save-prod').onclick = ()=>{
+        const updated = {
+          id: p.id,
+          title: editor.querySelector('#e-title').value.trim()||'Untitled',
+          price: Number(editor.querySelector('#e-price').value)||0,
+          currency:'AED',
+          category: editor.querySelector('#e-cat').value,
+          inventory: Number(editor.querySelector('#e-inv').value)||0,
+          tags: editor.querySelector('#e-tags').value.split(',').map(s=>s.trim()).filter(Boolean),
+          images: editor.querySelector('#e-imgs').value.split(',').map(s=>s.trim()).filter(Boolean) || ['https://picsum.photos/seed/default/800/600'],
+          variants: [],
+          desc: editor.querySelector('#e-desc').value||''
+        };
+        const idx = products.findIndex(x=>x.id===p.id);
+        if(idx>=0) products[idx]=updated; else products.unshift(updated);
+        saveProducts(products); refreshList(); renderGrid(); editor.innerHTML='<div class="tiny">Saved.</div>';
+      }
+    }
+  }
+
+  // export orders CSV
+  function exportOrdersCSV(){
+    const orders = loadOrders();
+    if(!orders.length) return alert('No orders to export');
+    const rows = ['order_id,date,customer,phone,area,address,total,status,items'];
+    orders.forEach(o=>{
+      const items = o.items.map(i=>`${i.title} x${i.qty}`).join(' | ');
+      rows.push([o.id,o.date,o.customer.name,o.customer.phone,o.customer.area,`"${o.customer.address.replace(/\"/g,'"')}\``,o.total,o.status,`"${items}"`].join(','));
+    });
+    const blob = new Blob([rows.join('\n')],{type:'text/csv'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = 'orders_export.csv'; a.click(); URL.revokeObjectURL(url);
+  }
+
+  // events
+  document.querySelector('body').addEventListener('click',e=>{
+    const a = e.target.closest('[data-action]'); if(a){const act=a.getAttribute('data-action');const id=a.getAttribute('data-id'); if(act==='buy') addToCart(id); if(act==='view') openProduct(id); if(act==='fav') alert('Added to favorites (mock)');}
+    const rm = e.target.getAttribute('data-remove'); if(rm) removeFromCart(rm);
+    const q = e.target.getAttribute('data-q'); if(q && e.target.getAttribute('data-id')) changeQty(e.target.getAttribute('data-id'), q==='+'?1:-1);
+  })
+
+  document.getElementById('open-cart').onclick = ()=>{
+    window.scrollTo({top:0,behavior:'smooth'});
+    document.querySelector('.cart-panel').classList.add('pulse');
+    // small visual hint
+    document.querySelector('.cart-panel').style.transform='translateY(-6px)';setTimeout(()=>document.querySelector('.cart-panel').style.transform='none',220);
+  }
+
+  document.getElementById('open-admin').onclick = ()=>{
+    // simple auth prompt (not secure) — optional
+    const pass = prompt('Enter admin password (default: admin)');
+    if(pass === null) return; // cancelled
+    if(pass !== 'admin'){alert('Wrong password'); return}
+    openAdmin();
+  }
+  document.getElementById('open-admin-floating').onclick = ()=>document.getElementById('open-admin').click();
+
+  document.getElementById('clear-cart').onclick = ()=>{if(confirm('Clear cart?')){cart=[];saveCart(cart);renderCart()}}
+
+  document.getElementById('checkout-btn').onclick = ()=>openCheckout();
+
+  // search & filters
+  let currentCat = 'all';
+  document.querySelectorAll('.chip').forEach(c=>c.addEventListener('click',e=>{document.querySelectorAll('.chip').forEach(x=>x.classList.remove('active')); c.classList.add('active'); currentCat = c.getAttribute('data-cat'); renderGrid(searchInput.value,currentCat);}));
+  searchInput.addEventListener('input',e=>renderGrid(e.target.value,currentCat));
+
+  // initial render
+  renderGrid(); renderCart();
+
+  // small utility to clear modals on navigation
+  window.addEventListener('hashchange',()=>{document.getElementById('modal-root').innerHTML=''})
+
+  </script>
+</body>
+</html>
