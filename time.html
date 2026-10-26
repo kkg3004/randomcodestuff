@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TIME</title>
+    <link rel="preconnect" href="https://googleapis.com">
+    <link rel="preconnect" href="https://gstatic.com" crossorigin>
+    <link href="https://googleapis.com/css2?family=Instrument+Serif:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            --background-color: #000000;
+            margin: 0;
+            padding: 0;
+            background-color: var(--background-color);
+            color: #ffffff;
+            font-family: "Instrument Serif", serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            user-select: none;
+        }
+        .timer {
+            font-size: 8vw;
+            font-weight: 400;
+            letter-spacing: -0.01em; 
+            font-variant-numeric: tabular-nums;
+            display: flex;
+            gap: 2vw;
+        }
+        .hidden-text {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            opacity: 0;
+            user-select: none;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="timer" id="timer">00:00:00:00</div>
+    <h6 class="hidden-text" aria-hidden="true">Why are you checking the code.</h6>
+    <h6 class="hidden-text" aria-hidden="true">Do you think you're smart?</h6>
+    <h6 class="hidden-text" aria-hidden="true">Then tell me.</h6>
+    <span class="hidden-text" aria-hidden="true">What's the TIME?</span>
+
+    <script>
+        function updateTimer() {
+            const now = new Date();
+            const currentYear = now.getFullYear();
+            const nextNewYear = new Date(Date.UTC(2027, 3, 30, 2, 36, 48));
+            
+            const distance = nextNewYear.getTime() - now.getTime();
+
+            if (distance <= 0) {
+                document.getElementById("timer").innerText = "00:00:00:00";
+                return;
+            }
+
+            const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+            const dStr = String(days).padStart(2, '0');
+            const hStr = String(hours).padStart(2, '0');
+            const mStr = String(minutes).padStart(2, '0');
+            const sStr = String(seconds).padStart(2, '0');
+
+            document.getElementById("timer").innerText = `${dStr}:${hStr}:${mStr}:${sStr}`;
+        }
+
+        updateTimer();
+        setInterval(updateTimer, 1000);
+    </script>
+</body>
+</html>

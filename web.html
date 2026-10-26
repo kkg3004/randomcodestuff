@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kai.</title>
+  <style>
+    body {
+      min-height: 100vh;
+      margin: 0;
+      display: grid;
+      place-items: center;
+      background: #0B132B;
+      overflow: hidden;
+      position: relative;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    }
+    :root {
+      --size: min(260px, 70vw, 70vh);
+      --bg-portfolio: #e5e5e5;
+      --text-main: #111827;
+      --text-muted: #4b5563;
+      --accent: #3b82f6;
+      --card-bg: #ffffff;
+      --border: #e5e7eb;
+    }
+    body.dark-theme-active {
+      --bg-portfolio: #111827;
+      --text-main: #f9fafb;
+      --text-muted: #9ca3af;
+      --accent: #60a5fa;
+      --card-bg: #1f2937;
+      --border: #374151;
+    }
+    .loading {
+      position: relative;
+      width: var(--size);
+      aspect-ratio: 1;
+      box-sizing: border-box;
+      border: 8px solid rgba(255, 255, 255, 0.2);
+      border-radius: 50%;
+      z-index: 2;
+      transition: border-color 0.3s ease, transform 0.8s cubic-bezier(0.25, 1, 0.5, 1);
+    }
+    .loading::before {
+      content: "";
+      position: absolute;
+      inset: -8px;
+      box-sizing: border-box;
+      border: 8px solid transparent;
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      transition: opacity 0.3s ease;
+    }
+    .loading::after {
+      content: "";
+      position: absolute;
+      width: 70px;
+      height: 35px;
+      left: 50%;
+      top: 45%;
+      border-left: 10px solid #42e87d;
+      border-bottom: 10px solid #42e87d;
+      opacity: 0;
+      transform: translate(-50%, -50%) rotate(-45deg) scale(0.5);
+      transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+    .loading.is-complete {
+      border-color: #42e87d;
+    }
+    .loading.is-complete::before {
+      opacity: 0;
+    }
+    .loading.is-complete::after {
+      opacity: 1;
+      transform: translate(-50%, -50%) rotate(-45deg) scale(1);
+    }
+    .loading.go-down {
+      transform: translateY(calc(50vh - (var(--size) / 2)));
+    }
+    .loading.go-up {
+      transform: translateY(calc(-65vh - var(--size)));
+      transition: transform 1.2s cubic-bezier(0.76, 0, 0.24, 1);
+    }
+    .ogee-container {
+      position: absolute;
+      left: 50%;
+      top: 100vh;
+      width: 100vw;
+      height: 500vh;
+      transform: translateX(-50%);
+      z-index: -1;
+      transition: transform 1.35s cubic-bezier(0.76, 0, 0.24, 1);
+      pointer-events: none;
+    }
+    .ogee-container svg {
+      width: 100%;
+      height: 100%;
+      fill: var(--bg-portfolio);
+      transition: fill 0.3s ease;
+    }
+    .ogee-container.go-up {
+      transform: translate(-50%, calc(-180vh - (var(--size) / 2)));
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .portfolio-wrapper {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100vh;
+      overflow-y: auto;
+      opacity: 0;
+      visibility: hidden;
+      z-index: 10;
+      transition: opacity 0.8s ease 3s;
+      color: var(--text-main);
+      box-sizing: border-box;
+    }
+    .portfolio-wrapper.reveal {
+      opacity: 1;
+      visibility: visible;
+    }
+    .theme-toggle {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      color: var(--text-main);
+      padding: 10px 16px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.875rem;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+      transition: background 0.3s, color 0.3s, transform 0.2s;
+    }
+    .theme-toggle:hover {
+      transform: scale(1.05);
+    }
+    .main-content {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 80px 24px;
+    }
+    header h1 {
+      font-size: 3rem;
+      margin: 0 0 8px 0;
+      letter-spacing: -0.05em;
+    }
+    header p {
+      font-size: 1.25rem;
+      color: var(--text-muted);
+      margin: 0 0 48px 0;
+    }
+    .section-title {
+      font-size: 1.5rem;
+      margin: 40px 0 20px 0;
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 8px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    @media (max-width: 640px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      padding: 24px;
+      border-radius: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .card h3 {
+      margin: 0 0 8px 0;
+      font-size: 1.25rem;
+    }
+    .card p {
+      margin: 0;
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+    .tags {
+      display: flex;
+      gap: 8px;
+      margin-top: 16px;
+      flex-wrap: wrap;
+    }
+    .tag {
+      background: rgba(59, 130, 246, 0.1);
+      color: var(--accent);
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    footer {
+      margin-top: 60px;
+      text-align: center;
+      font-size: 0.875rem;
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="loading" role="status" aria-label="Loading"></div>
+
+  <div class="ogee-container">
+    <svg viewBox="0 0 100 200" preserveAspectRatio="none">
+      <path d="M 0,200 L 0,35 C 0,20 15,15 35,10 C 45,7 50,2 50,0 C 50,2 55,7 65,10 C 85,15 100,20 100,35 L 100,200 Z" />
+    </svg>
+  </div>
+
+  <div class="portfolio-wrapper">
+    <button class="theme-toggle" id="themeBtn" aria-label="Toggle light and dark theme">🌙</button>
+    
+    <main class="main-content">
+      <header>
+        <h1>Kai.</h1>
+        <p>Creative Developer & Designer</p>
+      </header>
+
+      <section>
+        <h2 class="section-title">Current Projects</h2>
+        <div class="grid">
+          <div class="card">
+            <h3>This Website :D</h3>
+            <p>A fun way of showing off my coding skills and interactive, fun animations through an easy-to-use website.</p>
+            <div class="tags"><span class="tag">WebGL</span><span class="tag">CSS</span></div>
+          </div>
+          <div class="card">
+            <h3>TBD</h3>
+            <p>i make a game maybe, i don't know</p>
+            <div class="tags"><span class="tag">Godot</span><span class="tag">Work-In-Progress</span></div>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2 class="section-title">Skills</h2>
+        <div class="card" style="display: flex; flex-wrap: wrap; gap: 12px; padding: 20px;">
+          <span class="tag" style="font-size:0.9rem; padding: 6px 12px;">Python Coding</span>
+          <span class="tag" style="font-size:0.9rem; padding: 6px 12px;">CSS Architecture</span>
+          <span class="tag" style="font-size:0.9rem; padding: 6px 12px;">Video Editing</span>
+          <span class="tag" style="font-size:0.9rem; padding: 6px 12px;">Creative Design</span>
+        </div>
+      </section>
+
+      <footer>
+        <p>&copy; hi.</p>
+      </footer>
+    </main>
+  </div>
+
+  <script>
+    window.addEventListener("load", () => {
+      setTimeout(() => {
+        const loader = document.querySelector(".loading");
+        const ogee = document.querySelector(".ogee-container");
+        const portfolio = document.querySelector(".portfolio-wrapper");
+
+        loader.classList.add("is-complete");
+        loader.setAttribute("aria-label", "Loaded");
+
+        setTimeout(() => {
+          loader.classList.add("go-down");
+        }, 1000);
+
+        setTimeout(() => {
+          loader.classList.add("go-up");
+          ogee.classList.add("go-up");
+          portfolio.classList.add("reveal");
+          document.body.style.overflow = "auto"; 
+        }, 2000);
+
+        setTimeout(() => {
+          console.log("Screen is now fully covered by the solid rectangle.");
+        }, 3200);
+      }, 1000);
+    });
+
+    const themeBtn = document.getElementById('themeBtn');
+    themeBtn.addEventListener('click', () => {
+      const isDark = document.body.classList.toggle('dark-theme-active');
+      themeBtn.innerText = isDark ? "☀️" : "🌙";
+    });
+  </script>
+</body>
+</html>
