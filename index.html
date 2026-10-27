@@ -31,11 +31,11 @@
                 const response = await fetch('https://googleapis.com');
                 const data = await response.json();
                 fonts = data.items.slice(0, 100).map(item => item.family);
-                setInterval(changeFont, 500);
+                setInterval(changeFont, 50);
             } catch (error) {
                 console.error("Failed to load Google Fonts, falling back to local list.", error);
                 fonts = ['Arial', 'Georgia', 'Courier New', 'Impact', 'Times New Roman', 'Verdana'];
-                setInterval(changeFont, 500);
+                setInterval(changeFont, 50);
             }
         }
         function changeFont() {
