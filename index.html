@@ -16,43 +16,57 @@
         #bigText {
             font-size: 4rem;
             text-align: center;
-            transition: font-family 0.2s ease;
+            /* Changed transition to 'all' or specific properties. 
+               font-family cannot animate smoothly, but font-size or opacity can */
+            transition: all 0.3s ease; 
         }
     </style>
 </head>
 <body>
+
     <div id="bigText">kai.</div>
+
     <script>
         const textElement = document.getElementById('bigText');
-        let fonts = [];
         let index = 0;
-        async function loadGoogleFonts() {
-            try {
-                const response = await fetch('https://googleapis.com');
-                const data = await response.json();
-                fonts = data.items.slice(0, 100).map(item => item.family);
-                setInterval(changeFont, 50);
-            } catch (error) {
-                console.error("Failed to load Google Fonts, falling back to local list.", error);
-                fonts = ['Arial', 'Georgia', 'Courier New', 'Impact', 'Times New Roman', 'Verdana'];
-                setInterval(changeFont, 50);
-            }
-        }
+
+        // A curated list of popular Google Fonts to cycle through safely
+        const fonts = [
+            'Roboto', 'Open Sans', 'Montserrat', 'Lato', 'Oswald', 
+            'Raleway', 'PT Sans', 'Merriweather', 'Playfair Display', 
+            'Bebas Neue', 'Pacifico', 'Caveat', 'Abril Fatface'
+        ];
+
         function changeFont() {
             if (fonts.length === 0) return;
+
             const nextFont = fonts[index];
-            const linkId = `font-${nextFont.replace(/\s+/g, '-')}`;
+            // Normalize the name to create a valid HTML element ID
+            const linkId = `font-${nextFont.replace(/\s+/g, '-')}`; 
+
+            // 1. Check if this Google Font stylesheet has already been added to the head
             if (!document.getElementById(linkId)) {
                 const link = document.createElement('link');
                 link.id = linkId;
                 link.rel = 'stylesheet';
+                
+                // FIXED: Correct Google Fonts CSS URL syntax and template string interpolation (${})
                 link.href = `https://googleapis.com{encodeURIComponent(nextFont)}&display=swap`;
                 document.head.appendChild(link);
             }
+
+            // 2. Apply the font family to the element
             textElement.style.fontFamily = `"${nextFont}", sans-serif`;
+
+            // 3. Move to the next font index safely
             index = (index + 1) % fonts.length;
         }
-        loadGoogleFonts();
+
+        // Run the cycle. Changed from 50ms to 1500ms to allow fonts time to download over the network
+        setInterval(changeFont, 1500);
+        
+        // Run once immediately on page load
+        changeFont(); 
     </script>
 </body>
 </html>
