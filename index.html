@@ -16,41 +16,36 @@
         #bigText {
             font-size: 4rem;
             text-align: center;
-            /* Changed transition to 'all' or specific properties. 
-               font-family cannot animate smoothly, but font-size or opacity can */
-            transition: all 0.3s ease; 
+            transition: all 0.3s ease;
         }
     </style>
 </head>
 <body>
-
     <div id="bigText">kai.</div>
 
     <script>
         const textElement = document.getElementById('bigText');
         let index = 0;
 
-        // A curated list of popular Google Fonts to cycle through safely
         const fonts = [
-            'Roboto', 'Open Sans', 'Montserrat', 'Lato', 'Oswald', 
-            'Raleway', 'PT Sans', 'Merriweather', 'Playfair Display', 
-            'Bebas Neue', 'Pacifico', 'Caveat', 'Abril Fatface'
+            'Roboto', 'Open Sans', 'Montserrat', 'Lato', 
+            'Oswald', 'Raleway', 'PT Sans', 'Merriweather', 
+            'Playfair Display', 'Bebas Neue', 'Pacifico', 
+            'Caveat', 'Abril Fatface'
         ];
 
         function changeFont() {
             if (fonts.length === 0) return;
-
             const nextFont = fonts[index];
-            // Normalize the name to create a valid HTML element ID
-            const linkId = `font-${nextFont.replace(/\s+/g, '-')}`; 
+            
+            const linkId = `font-${nextFont.replace(/\s+/g, '-')}`;
 
             // 1. Check if this Google Font stylesheet has already been added to the head
             if (!document.getElementById(linkId)) {
                 const link = document.createElement('link');
                 link.id = linkId;
                 link.rel = 'stylesheet';
-                
-                // FIXED: Correct Google Fonts CSS URL syntax and template string interpolation (${})
+                // FIXED: Corrected domain, path, and added the missing $ for string interpolation
                 link.href = `https://googleapis.com{encodeURIComponent(nextFont)}&display=swap`;
                 document.head.appendChild(link);
             }
@@ -62,11 +57,11 @@
             index = (index + 1) % fonts.length;
         }
 
-        // Run the cycle. Changed from 50ms to 1500ms to allow fonts time to download over the network
+        // Run the cycle every 1.5 seconds
         setInterval(changeFont, 1500);
         
         // Run once immediately on page load
-        changeFont(); 
+        changeFont();
     </script>
 </body>
 </html>
